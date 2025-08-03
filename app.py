@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import json
 import os
+import bank_ai
 
 # Page config
 st.set_page_config(
@@ -68,8 +69,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-
 
 def save_data():
     """Save current data to JSON file"""
@@ -442,15 +441,129 @@ def show_quick_actions():
         if st.button("📥 Import Data", type="secondary", use_container_width=True):
             st.session_state.show_import = True
             st.rerun()
-
-def show_quick_add_forms():
-    """Show quick add forms for income/expense"""
     
+    # Inline Export Section
+    if st.session_state.get('show_export', False):
+        st.markdown("---")
+        with st.expander("💾 Export Data", expanded=True):
+            st.subheader("💾 Export Data")
+            
+            # Prepare data for export
+            data = {
+                'transactions': st.session_state.transactions_df.to_dict('records'),
+                'current_balance': st.session_state.current_balance,
+                'next_id': st.session_state.next_id
+            }
+            
+            # Create download button with unique key
+            st.download_button(
+                label="Download Backup File",
+                data=json.dumps(data, default=str, indent=2),
+                file_name=f"cashflow_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json",
+                key="export_download_button"
+            )
+            
+            if st.button("Close", type="secondary", key="close_export"):
+                st.session_state.show_export = False
+                st.rerun()
+    
+    # Inline Import Section - FIXED VERSION
+    if st.session_state.get('show_import', False):
+        st.markdown("---")
+        with st.expander("📥 Import Data", expanded=True):
+            
+            # Create tabs for different import methods
+            import_tab1, import_tab2 = st.tabs(["📄 JSON Import", "🤖 PDF AI Import"])
+            
+            with import_tab1:
+                st.subheader("📥 Import JSON Backup")
+                uploaded_file = st.file_uploader("Choose a JSON backup file", type=['json'], key="json_uploader")
+                if uploaded_file is not None:
+                    try:
+                        data = json.load(uploaded_file)
+                        
+                        # Convert dates back to datetime
+                        for transaction in data['transactions']:
+                            transaction['date'] = datetime.strptime(transaction['date'], '%Y-%m-%d').date()
+                        
+                        st.session_state.transactions_df = pd.DataFrame(data['transactions'])
+                        st.session_state.current_balance = data['current_balance']
+                        st.session_state.next_id = data['next_id']
+                        save_data()
+                        
+                        st.markdown('<div class="success-message">✅ JSON backup imported successfully!</div>', unsafe_allow_html=True)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error importing JSON: {e}")
+            
+            with import_tab2:
+                st.subheader("🤖 AI PDF Import")
+                st.info("🔑 **API Key:** Loaded from .env file")
+                
+                # PDF Upload
+                uploaded_pdf = st.file_uploader(
+                    "Choose PDF Bank Statement",
+                    type=['pdf'],
+                    help="Upload your PDF bank statement for AI processing",
+                    key="pdf_uploader"
+                )
+                
+                if uploaded_pdf is not None:
+                    col1, col2 = st.columns([2, 1])
+                    with col1:
+                        st.info(f"📁 **{uploaded_pdf.name}** ({uploaded_pdf.size/1024:.1f} KB)")
+                    
+                    with col2:
+                        if st.button("🧠 Process with AI", type="primary"):
+                            with st.spinner("🤖 AI is analyzing your bank statement..."):
+                                
+                                # Call bank_ai module (only 2 parameters now)
+                                transactions, error = bank_ai.convert_pdf_to_json(
+                                    uploaded_pdf, 
+                                    uploaded_pdf.name
+                                )
+                                
+                                if error:
+                                    st.error(f"❌ {error}")
+                                elif transactions:
+                                    # Reload the app data since bank_ai updated cashflow_data.json
+                                    st.session_state.transactions_df, st.session_state.current_balance, st.session_state.next_id = load_data()
+                                    
+                                    st.success(f"✅ Successfully imported {len(transactions)} transactions!")
+                                    st.markdown('<div class="success-message">🎉 Your bank transactions have been added to the dashboard!</div>', unsafe_allow_html=True)
+                                    
+                                    # Show summary
+                                    transaction_list = transactions.get('transactions', [])
+                                    total_income = sum(abs(t['amount']) for t in transaction_list if t['type'] == 'income')
+                                    total_expenses = sum(abs(t['amount']) for t in transaction_list if t['type'] == 'expense')
+                                    
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        st.metric("💰 Income Added", f"${total_income:,.0f}")
+                                    with col2:
+                                        st.metric("💸 Expenses Added", f"${total_expenses:,.0f}")
+                                    with col3:
+                                        st.metric("📊 Transactions", len(transaction_list))
+                                    
+                                    st.rerun()
+                                else:
+                                    st.warning("⚠️ No transactions found in the PDF")
+            
+            if st.button("Close", type="secondary", key="close_import"):
+                st.session_state.show_import = False
+                st.rerun()
+        
+def show_quick_add_forms():
+    """Show quick add forms for income and expenses"""
+    st.header("📝 Quick Add Forms")
+    
+    # Income form
     if st.session_state.get('show_add_income', False):
         with st.expander("💰 Quick Add Income", expanded=True):
             col1, col2 = st.columns(2)
             with col1:
-                amount = st.number_input("Amount ($)", min_value=0, value=1000, step=100, key="quick_income_amount")
+                amount = st.number_input("Amount ($)", min_value=0, value=5000, step=100, key="quick_income_amount")
                 description = st.text_input("Description", key="quick_income_desc")
             with col2:
                 date = st.date_input("Date", value=datetime.now().date(), key="quick_income_date")
@@ -471,54 +584,7 @@ def show_quick_add_forms():
                     st.session_state.show_add_income = False
                     st.rerun()
     
-    # Export data functionality
-    if st.session_state.get('show_export', False):
-        with st.expander("💾 Export Data", expanded=True):
-            st.subheader("📤 Export Data")
-            if st.button("Download JSON Backup", type="primary", key="download_backup_btn"):
-                data = {
-                    'transactions': st.session_state.transactions_df.to_dict('records'),
-                    'current_balance': st.session_state.current_balance,
-                    'next_id': st.session_state.next_id
-                }
-                st.download_button(
-                    label="Download Backup File",
-                    data=json.dumps(data, default=str, indent=2),
-                    file_name=f"cashflow_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                    mime="application/json"
-                )
-            
-            if st.button("Close", type="secondary", key="close_export"):
-                st.session_state.show_export = False
-                st.rerun()
-    
-    # Import data functionality
-    if st.session_state.get('show_import', False):
-        with st.expander("📥 Import Data", expanded=True):
-            st.subheader("📥 Import Data")
-            uploaded_file = st.file_uploader("Choose a JSON backup file", type=['json'], key="import_uploader")
-            if uploaded_file is not None:
-                try:
-                    data = json.load(uploaded_file)
-                    
-                    # Convert dates back to datetime
-                    for transaction in data['transactions']:
-                        transaction['date'] = datetime.strptime(transaction['date'], '%Y-%m-%d').date()
-                    
-                    st.session_state.transactions_df = pd.DataFrame(data['transactions'])
-                    st.session_state.current_balance = data['current_balance']
-                    st.session_state.next_id = data['next_id']
-                    save_data()
-                    
-                    st.markdown('<div class="success-message">✅ Data imported successfully!</div>', unsafe_allow_html=True)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error importing data: {e}")
-            
-            if st.button("Close", type="secondary", key="close_import"):
-                st.session_state.show_import = False
-                st.rerun()
-    
+    # Expense form
     if st.session_state.get('show_add_expense', False):
         with st.expander("💸 Quick Add Expense", expanded=True):
             col1, col2 = st.columns(2)
