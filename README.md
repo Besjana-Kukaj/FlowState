@@ -1,4 +1,4 @@
-# 💰 FlowState - Real-Time Cash Flow Dashboard
+# FlowState - Real-Time Cash Flow Dashboard
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io)
@@ -6,27 +6,27 @@
 
 **FlowState** is an intelligent cash flow management dashboard designed for small businesses and freelancers. Monitor your financial health in real-time, predict cash crunches before they happen, and make data-driven decisions with AI-powered bank statement processing.
 
-## 🚀 Key Features
+## Key Features
 
-### 📊 **Real-Time Financial Health Monitoring**
+### **Real-Time Financial Health Monitoring**
 - **Cash Flow Pulse Score**: 0-100 health rating with instant visual feedback
 - **Days Until Danger**: Predictive alerts when your balance will go negative
 - **Monthly Runway**: Calculate how long your current balance will last
 - **Trend Analysis**: Track if your financial situation is improving or declining
 
-### 🤖 **AI-Powered Bank Statement Processing**
+### **AI-Powered Bank Statement Processing**
 - Upload PDF bank statements for automatic transaction extraction
 - Powered by Google Gemini AI for intelligent categorization
 - Smart description cleaning and duplicate detection
 - Automatic income vs expense classification
 
-### 🎛️ **Scenario Planning & Forecasting**
+### **Scenario Planning & Forecasting**
 - **Payment Delay Modeling**: See impact of late client payments
 - **What-If Analysis**: Test large expense scenarios
 - **Interactive Projections**: Visualize multiple financial scenarios
 - **Risk Alerts**: Get warned about overdue payments and cash flow risks
 
-### 💼 **Complete Transaction Management**
+### **Complete Transaction Management**
 - Add, edit, and delete transactions with probability scoring
 - Support for confirmed, pending, and projected transactions
 - Quick action buttons for common operations
