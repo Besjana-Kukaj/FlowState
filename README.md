@@ -1,9 +1,5 @@
 # FlowState - Real-Time Cash Flow Dashboard
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
 **FlowState** is an intelligent cash flow management dashboard designed for small businesses and freelancers. Monitor your financial health in real-time, predict cash crunches before they happen, and make data-driven decisions with AI-powered bank statement processing.
 
 ## Key Features
